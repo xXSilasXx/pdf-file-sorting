@@ -6,7 +6,7 @@ pdf_file_path1 = 'Your file path' # take the document
 
 file_base_name1 = pdf_file_path1.replace('.pdf','') 
 
-output_folder_path = os.path.join(os.getcwd(), 'Final Output') # specify where the splitted files are transferred to be concetenated
+output_folder_path = os.path.join(os.getcwd(), 'Your path') # specify the path where the splitted files are transferred to be concetenated
 
 pdf1 = PdfFileReader(pdf_file_path1) # create PdfFileReader object
 
