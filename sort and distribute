@@ -71,7 +71,7 @@ def Vorlagen_function(instance):
         ]],
     ]
 
-    def Kursleiter_information(kürzel, c, counter):
+    def information(kürzel, c, counter):
         counter+=1
         Supralist = []
         if Service_1 == True:
@@ -88,7 +88,7 @@ def Vorlagen_function(instance):
                     break
         return counter
 
-    counter = Kursleiter_information(Kürzel, c, counter)
+    counter = information(Kürzel, c, counter)
 
     counter += 1
     c.drawString(rightside, line_height(counter), 'Als Anlage übersende ich Ihnen eine Kopie unseres Vertragesertrages.')
