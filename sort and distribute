@@ -1,0 +1,371 @@
+import PyPDF2
+import os
+import shutil
+from datetime import date
+from reportlab.pdfgen import canvas
+from PyPDF2 import PdfFileReader, PdfFileWriter
+
+def Vorlagen_function(instance):
+    Adress = instance.addresse
+    Vertragskategorie = instance.Vertragskategorie.replace(': '+ instance.kürzel,'')
+    Service_1 = instance.Service_1
+    Service_1_oder_Service_2 = instance.Service_1_oder_Service_2
+    Ort = instance.ort
+    vorname = instance.vorname
+    Familyname = instance.Empfänger
+    Kürzel = instance.kürzel
+
+    def line_height(number_of_line_decrease):
+        line_base = 682
+        hyper_line_depth = 13  # how far does one line reach deep
+        return line_base - hyper_line_depth * number_of_line_decrease
+
+    def only_first_name(name):
+        let_count = 0
+        first_name = ''
+        for letter in name:
+            if letter == ' ' and let_count != 0:
+                break
+            first_name += letter
+            let_count+= 1
+        return first_name
+
+    vorname = only_first_name(vorname)
+
+    c = canvas.Canvas( instance.vorname + ' ' + instance.nachname + ' Begrüßung.pdf')
+
+    #c.drawImage('scr111.png', 57, 700, 480, 115)
+    #c.drawImage('screon.png', 59.5, 700, 475, 111.5)
+    c.drawImage('Screenshot 2020-10-24 at 15.16.34.png', 70, 715, 450, 96.5)
+
+    rightside = 66
+    c.setFont('Helvetica', 11, leading=None)
+    c.drawString(rightside, line_height(0), 'Liebe/r')
+
+    c.drawString(rightside, line_height(1), Familyname)
+
+    c.drawString(rightside, line_height(2), Adress)
+
+    c.drawString(rightside, line_height(3), Ort + ' Berlin')
+
+    c.drawString(rightside + 344, line_height(5), 'Berlin, den ' + str(date.today())[8:10] + '.' + str(date.today())[5:7] + '.' + str(date.today())[:4])
+
+    c.setFont('Helvetica-Bold', 11)
+    c.drawString(rightside, line_height(7), vorname + ' in der Firma - ' + Service_1_oder_Service_2)
+    c.setFont('Helvetica', 11, leading=None)
+
+    c.drawString(rightside, line_height(9), 'Liebe ' + Familyname + ',')
+
+    counter = 11
+
+
+    Service_1_Unterteilung_liste = [
+        [['Kürzel'], [
+            'Vertragstext',
+        ]],
+    ]
+
+    Service_2_Unterteilung_liste= [
+        [['Kürzel',], [
+            'Vertragstext',
+        ]],
+    ]
+
+    def Kursleiter_information(kürzel, c, counter):
+        counter+=1
+        Supralist = []
+        if Service_1 == True:
+            Supralist = Service_1_Unterteilung_liste
+        else:
+            Supralist = Service_2_Unterteilung_liste
+
+        for List in Supralist:
+            for element in List[0]:
+                if element == kürzel:
+                    for text in List[1]:
+                        c.drawString(rightside, line_height(counter), text)
+                        counter += 1
+                    break
+        return counter
+
+    counter = Kursleiter_information(Kürzel, c, counter)
+
+    counter += 1
+    c.drawString(rightside, line_height(counter), 'Als Anlage übersende ich Ihnen eine Kopie unseres Vertragesertrages.')
+
+    counter += 2
+    c.drawString(rightside, line_height(counter),'Falls Sie die Leistungen des Staates in Anspruch nehmen ')
+    counter += 1
+    c.drawString(rightside, line_height(counter), 'können, finden Sie den aktuellen Berliner Antrag unter: ')
+    counter += 1
+    c.setFillColorRGB(0, 0, 1)
+    c.drawString(rightside, line_height(counter), 'Link')
+    c.setStrokeColorRGB(0, 0, 1)
+    c.line(rightside, line_height(counter) - 4, 373 ,line_height(counter) - 4)  # count = 28 , multiplied with line is length of string
+    c.setFillColorRGB(0, 0, 0)
+
+    counter += 2
+
+    counter += 2
+    c.drawString(rightside, line_height(counter), 'Mit freundlichen Grüßen und besten Wünschen')
+
+    counter += 4
+    c.drawString(rightside, line_height(counter), 'Firma')
+    counter += 1
+    c.setFillColorRGB(0, 0, 1)
+    c.showPage()
+    c.save()
+
+
+
+def find_list_instance(instance, List):
+    for thing in List:
+        if instance == thing:
+            return True
+    return False
+
+
+class Vertrag:
+    KlientelKürzelliste = ['Kürzel']
+    Klientelliste = ['Vertragsordner: Kürzel',]
+
+    def __init__(self, vorname, nachname, Empfänger, kürzel, Service_1 , adresse, ort ):
+        self.vorname = vorname
+        self.nachname = nachname
+        self.Empfänger = Empfänger
+        self.kürzel = kürzel
+        self.documentname = 'UVertrag ' + vorname + ' '+ nachname + ' ' + kürzel +'.pdf'
+        self.Vertragskategorie = ''
+        self.Service_1 = False
+        self.Service_1_oder_Service_2 = ''
+        self.addresse = adresse
+        self.ort = ort
+        self.page_num = 0
+
+    def erstelle_person(self, number):
+        number = number*2-1
+        self.page_num = number
+        self.vorname = input( "Schreibe hier den Vornamen des Vertragspartners das in der Vertragsliste auf Seite " + str(number) + " steht: ")
+        self.nachname = input("Nun schreibe hier den Nachnamen des selben Vertragspartners (auf der Vertragsliste auf Seite " + str(number) + " ) hin: ")
+        self.Empfänger = input("Gib hier den Nachnamen der in der Kopfzeile des Begrüßungsschreiben steht an: ")
+        kürzel = input(
+            "Schreibe hier den kürzel der Vertragskategorie von " + self.vorname + " "+ self.nachname +" ein. Den genauen Kürzel der Vertragskategorie kannst du aus der obigen Liste mit den Vertragskategorien und ihren jeweiligen Kürzeln entnehmen: ")
+        while find_list_instance(kürzel, self.KlientelKürzelliste) == False:
+            kürzel = input(
+                "Dieser Kürzel existiert nicht. Mit höchster Wahrscheinlichkeit hast du einen Großbuchstaben klein geschrieben oder vice versa. Bitte versuche es erneut: ")
+        self.kürzel = kürzel
+        self.documentname = 'UVertrag ' + self.vorname + ' ' + self.nachname + ' ' + self.kürzel +'.pdf'
+
+
+        for element in self.Klientelliste:
+            if self.kürzel in element:
+                self.Vertragskategorie = element.replace(': ' + self.kürzel ,'')
+                break
+
+        if 'Co' in self.kürzel:
+            self.Service_1 = True
+            self.Service_1_oder_Service_2 = 'Service_1'
+
+        else:
+            self.Service_1 = False
+            self.Service_1_oder_Service_2 = 'Service_2'
+
+        self.addresse = input('Gib hier die Straße mit Hausnummer von ' + self.vorname +' ' + self.nachname + ' (in der Vertragsliste auf Seite ' + str(number) + ' ) ein: ')
+        self.ort = input('Gib hier die Postleitzahl von ' + self.vorname +' ' + self.nachname + ' (in der Vertragsliste auf Seite ' + str(number) + ' ) ein: ')
+
+
+    def print_person(self):
+        print('Der Vorame des Vertragspartners den du eingegeben hast lautet: ' + self.vorname + ' und der Nachname lautet: ' + self.nachname)
+        print("Der Empfänger des Briefes ist: " + self.Empfänger)
+        print('Der Kürzel der Vertragskategorie des Vertragspartners den du eingegeben hast lautet: ' + self.kürzel)
+        print('Das Vertragspartners geht in einen: '+ self.Service_1_oder_Service_2)
+        print('Die Adresse des Vertragspartners ist: ' + self.addresse + ' und deren Postleitzahl ist: ' + self.ort)
+        answer = input('Ist das so korrekt ?(ja/nein)')
+        if answer == 'ja' or answer == 'Ja' or answer == 'JA':
+            return True
+        return False
+
+source_dir = os.getcwd()
+
+def delete_old():
+    counter = 1
+    for thing in os.listdir(os.getcwd()):
+        for file in os.listdir(os.getcwd()):
+           if file.startswith('a'+str(counter)) or file.startswith('b'+str(counter)):
+                 os.remove(file)
+        counter += 1
+
+
+def ret_number(string):
+    return string.replace('.pdf', '')
+
+counter =1
+sec_counter =1
+
+writer = PyPDF2.PdfFileWriter()
+
+
+counter =1
+sec_counter =1
+
+writer = PyPDF2.PdfFileWriter()
+
+Vertrag_list = []
+
+for file in os.listdir(source_dir):
+    for item in os.listdir(source_dir):
+        if ret_number(item) == 'a'+str(counter):
+            person = Vertrag('', '', '', '','','','')
+            if counter == 1:
+                print('Hier ist eine Liste mit allen Vertragspartnern und ihren jeweiligen Kürzeln im Ordner:')
+                print(person.Klientelliste)
+            print('')
+            person.erstelle_person(counter)
+            print('')
+            while person.print_person() == False:
+                person.erstelle_person(counter)
+            Vertrag_list.append(person)
+            pdf = PyPDF2.PdfFileReader(open(item, 'rb'))
+            writer.addPage(pdf.getPage(0))
+
+        if ret_number(item) == 'b'+str(counter):
+            pdf = PyPDF2.PdfFileReader(open(item, 'rb'))
+            writer.addPage(pdf.getPage(0))
+            output_file = open(person.documentname ,'wb')
+            writer.write(output_file)
+            writer = PyPDF2.PdfFileWriter()
+            break
+    counter += 1
+    sec_counter +=1
+
+
+
+delete_old()
+
+
+
+
+def retnum2(string):
+    return string.replace('new_file.pdf', '')
+
+#os.chdir(source_dir)
+
+
+base_dir = 'Your path'  #echten path einfügen
+
+#def make_corresponding_directory()
+
+writer = PyPDF2.PdfFileWriter()
+
+Left_out_List = []
+
+def write_vorlage(Vertrag, dest_dir, person_existiert_bereits):
+    Vorlagen_function(Vertrag)
+    writer = PyPDF2.PdfFileWriter()
+    pdf = PyPDF2.PdfFileReader(open(Vertrag.vorname + ' ' + Vertrag.nachname + ' Begrüßung.pdf', 'rb'))
+    writer.addPage(pdf.getPage(0))
+    pdf = PyPDF2.PdfFileReader(open(source_dir.replace('/Final Output', '') + '/Last_Page.pdf', 'rb'))
+    writer.addPage(pdf.getPage(0))
+    thing = str(date.today())[2:4] + '.' + str(date.today())[5:7]
+    if person_existiert_bereits == True:
+        name = 'Begrüßung ' + thing + ' ' + Vertrag.vorname + ' ' + Vertrag.nachname + ' '+ Vertrag.kürzel +'.pdf'
+    else:
+        name = 'Begrüßung ' + Vertrag.vorname + ' ' + Vertrag.nachname + ' '+ Vertrag.kürzel +'.pdf'
+    output_file = open(name, 'wb')
+    writer.write(output_file)
+    shutil.move(name, dest_dir)
+    writer = PyPDF2.PdfFileWriter()
+    os.remove(Vertrag.vorname + ' ' + Vertrag.nachname + ' Begrüßung.pdf')
+
+
+dest_dir = os.getcwd().replace('Final Output', 'Verträge Manuell')
+
+Directory_List = []
+
+for member in Vertrag_list:
+    try:
+        try:
+            os.chdir(source_dir)
+            x_dir = os.getcwd().replace('Final Output', 'Verträge Manuell')
+            os.chdir(x_dir)
+            xale = member.documentname.replace('.pdf', '').replace('UVertrag ', '')
+            os.mkdir(x_dir + '/' + xale)
+            os.chdir(source_dir)
+            shutil.move(os.getcwd() + '/' + member.documentname, x_dir + '/' + xale)
+            write_vorlage(member, x_dir + '/' + xale, False)
+        except:
+            print('happened')
+            Left_out_List.append(member)
+            Vorlagen_function(member)
+            #shutil.move(source_dir + '/' + member.vorname + ' ' + member.nachname + ' Begrüßung.pdf')
+    except:
+        Left_out_List.append(member)
+
+    Directory_List.append([x_dir + '/' + xale, x_dir + '/' + xale + '/' + member.documentname,
+                           x_dir + '/' + xale + '/' + 'Begrüßung ' + member.vorname + ' ' + member.nachname + ' '+ member.kürzel +'.pdf',
+                           member])
+
+
+
+
+import os, sys, subprocess
+
+
+
+os.chdir(source_dir)
+
+
+def member_func(Boy):
+    Grundschul_index = Vertrag('', '', '', '', '', '', '').KlientelKürzelliste.index(Boy.kürzel)
+    return Vertrag('', '', '', '', '', '', '').Klientelliste[Grundschul_index].replace( ':', '')
+
+Print_List =[]
+
+for unit in Directory_List:
+    os.chdir(source_dir)
+    dest_dir = base_dir + '/' + member_func(unit[3]) + '/' + 'Teilnehmer ' + unit[3].kürzel
+    try:
+        try:
+            shutil.move(unit[0], dest_dir)
+            unit.append(True)
+        except:
+            thing = str(date.today())[2:4] + '.' + str(date.today())[5:7]
+            name1 = unit[1].replace('UVertrag ', 'UVertag ' + thing + ' ')
+            name2 = unit[2].replace('Begrüßung ', 'Begrüßung ' + thing + ' ')
+            os.rename(unit[1], name1)
+            os.rename(unit[2], name2)
+            dest_dir = dest_dir + '/' + unit[3].documentname.replace('.pdf', '').replace('UVertrag ', '')
+            shutil.move(name1, dest_dir)
+            shutil.move(name2, dest_dir)
+            intermed_dir = unit[0].replace(unit[3].documentname.replace('.pdf', '').replace('UVertrag ', ''), '')
+            os.rmdir(intermed_dir + unit[3].documentname.replace('.pdf', '').replace('UVertrag ', ''))
+            unit.append(False)
+    except:
+        Left_out_List.append(unit[3])
+    else:
+        if unit[4] == True:
+            dir = dest_dir + '/' + unit[3].documentname.replace('.pdf', '').replace('UVertrag ', '')
+            Print_List.append([dir + '/' + unit[3].documentname, dir + '/' + 'Begrüßung ' + unit[3].vorname + ' ' + unit[3].nachname + ' '+ unit[3].kürzel +'.pdf'])  # get wrcdrs of the files to be printed
+        else:
+            var = 'Begrüßung ' + unit[3].vorname + ' ' + unit[3].nachname + ' ' + unit[3].kürzel + '.pdf'
+            Print_List.append([dest_dir + '/' + unit[3].documentname.replace('UVertrag ', 'UVertag ' + thing + ' '), dest_dir + '/' + var.replace('Begrüßung ', 'Begrüßung ' + thing + ' ')])
+
+
+os.chdir(source_dir)
+
+print(Print_List)
+
+for einheit in Print_List:
+    opener = "open" if sys.platform == "darwin" else "xdg-open"
+    subprocess.call([opener, einheit[1]])
+    subprocess.call([opener, einheit[0]])
+
+fx = open('Prozess fehler', 'w')
+fx.write('')
+print("Diese Verträge aus der Liste wurden nicht aufgenommen:")
+print("------------------------------")
+for element in Left_out_List:
+    print(element.vorname + " " + element.nachname + " auf Seite " + str(element.page_num))
+    fx.write(element.vorname + " " + element.nachname + " auf Seite " + str(element.page_num) + '\n')
+
+
